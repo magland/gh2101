@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Box, Container, CssBaseline, Grid, ThemeProvider, createTheme, IconButton, Typography, Checkbox } from '@mui/material';
+import { Box, Container, CssBaseline, ThemeProvider, createTheme, IconButton, Typography, Checkbox } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
@@ -155,13 +155,17 @@ function App() {
               }}
             />
           </Box>
-          <Grid container spacing={2}>
+          <Box sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 2,
+            '& > div': {
+              flex: 1,
+              minWidth: '450px'
+            }
+          }}>
             {locations.map(location => (
-              <Grid size={{
-                xs: 12,
-                md: locations.length === 1 ? 12 : locations.length === 2 ? 6 : 4,
-                lg: locations.length === 1 ? 12 : locations.length === 2 ? 6 : 3,
-              }} key={location}>
+              <div key={location}>
                 <Box sx={{ mb: 2 }}>
                   <Box sx={{ mb: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
                     <Typography variant="h6">
@@ -212,9 +216,9 @@ function App() {
                     </Box>
                   ))}
                 </Box>
-              </Grid>
+              </div>
             ))}
-          </Grid>
+          </Box>
         </Box>
       </Container>
     </ThemeProvider>
