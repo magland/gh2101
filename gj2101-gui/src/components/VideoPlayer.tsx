@@ -1,5 +1,5 @@
-import { Card, CardContent, Typography, Paper } from '@mui/material';
-import { useEffect, useRef } from 'react';
+import { Card, CardContent, Typography, Paper, Box } from '@mui/material';
+import { useEffect, useState } from 'react';
 
 interface VideoPlayerProps {
   url: string;
@@ -11,46 +11,88 @@ interface VideoPlayerProps {
 }
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, title, currentTime, totalDuration, isPlaying, shouldFlip }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
+  const [isSeeking, setIsSeeking] = useState(false);
 
   useEffect(() => {
-    const video = videoRef.current;
-    if (video) {
+    if (videoElement) {
       if (!isNaN(currentTime) && currentTime >= 0 && currentTime <= totalDuration) {
-        video.currentTime = currentTime;
+        videoElement.currentTime = currentTime;
       }
       if (isPlaying) {
-        video.play().catch(() => {});
+        videoElement.play().catch(() => {});
       } else {
-        video.pause();
+        videoElement.pause();
       }
     }
-  }, [currentTime, totalDuration, isPlaying]);
+  }, [currentTime, totalDuration, isPlaying, videoElement]);
+
+  const [displaySeeking, setDisplaySeeking] = useState(false);
+  useEffect(() => {
+    if (!isSeeking) {
+      setDisplaySeeking(false);
+      return;
+    }
+    const timeoutId = setTimeout(() => {
+      setDisplaySeeking(true);
+    }
+    , 1000);
+    return () => {
+      clearTimeout(timeoutId);
+    }
+  }
+  , [isSeeking]);
 
   return (
-    <Card>
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          {title}
-        </Typography>
-        <Paper elevation={3}>
-          <video
-            ref={videoRef}
-            width="100%"
-            style={{
-              display: 'block',
-              maxHeight: '400px',
-              transform: shouldFlip ? 'scaleX(-1) scaleY(-1)' : 'none'
-            }}
-            disablePictureInPicture
-            controlsList="noplaybackrate nofullscreen nodownload"
-          >
-            <source src={url} type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-        </Paper>
-      </CardContent>
-    </Card>
+      <Card>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            {title}
+          </Typography>
+          <Paper elevation={3}>
+            <Box sx={{ position: "relative" }}>
+              <video
+                ref={elmt => setVideoElement(elmt)}
+                style={{
+                  display: "block",
+                  width: "100%",
+                  maxWidth: 600,
+                  height: "auto",
+                  transform: shouldFlip ? "scaleX(-1) scaleY(-1)" : "none"
+                }}
+                onSeeking={() => {
+                  setIsSeeking(true);
+                }}
+                onSeeked={() => {
+                  setIsSeeking(false);
+                }}
+                disablePictureInPicture
+                controlsList="noplaybackrate nofullscreen nodownload"
+                preload="metadata"
+              >
+                <source src={url} type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+              {displaySeeking && (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: "10px",
+                    right: "10px",
+                    backgroundColor: "rgba(0, 0, 0, 0.6)",
+                    color: "white",
+                    padding: "4px 8px",
+                    borderRadius: "4px",
+                    fontSize: "0.875rem"
+                  }}
+                >
+                  Seeking...
+                </Box>
+              )}
+            </Box>
+          </Paper>
+        </CardContent>
+      </Card>
   );
 };
 

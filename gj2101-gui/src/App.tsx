@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Box, Container, CssBaseline, Grid, ThemeProvider, createTheme, IconButton, Typography } from '@mui/material';
+import { Box, Container, CssBaseline, Grid, ThemeProvider, createTheme, IconButton, Typography, Checkbox } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
@@ -20,6 +20,7 @@ function App() {
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [mutedAudios, setMutedAudios] = useState<Record<string, boolean>>({});
+  const [activeLocations, setActiveLocations] = useState<Record<string, boolean>>({});
   const totalDuration = 360; // 6 minutes in seconds
 
   const handleToggleMute = (audioPath: string) => {
@@ -56,6 +57,24 @@ function App() {
     setIsPlaying(false);
   };
 
+  // Load activeLocations from localStorage
+  useEffect(() => {
+    const storedData = localStorage.getItem('activeLocations');
+    const storedBaseUrlForActiveLocations = localStorage.getItem('baseUrlForActiveLocations');
+
+    if (storedData && storedBaseUrlForActiveLocations === baseUrl) {
+      setActiveLocations(JSON.parse(storedData));
+    }
+  }, [baseUrl]);
+
+  // Save activeLocations to localStorage when changed
+  useEffect(() => {
+    if (baseUrl) {
+      localStorage.setItem('activeLocations', JSON.stringify(activeLocations));
+      localStorage.setItem('baseUrlForActiveLocations', baseUrl);
+    }
+  }, [activeLocations, baseUrl]);
+
   useEffect(() => {
     const query = queryString.parse(window.location.search);
     const url = query.baseUrl as string;
@@ -89,7 +108,7 @@ function App() {
     if (aHasTop && !bHasTop) return -1;
     if (!aHasTop && bHasTop) return 1;
     return a.localeCompare(b);
-  });
+  }).slice(0, 4);
 
   return (
     <ThemeProvider theme={darkTheme}>
@@ -138,12 +157,28 @@ function App() {
           </Box>
           <Grid container spacing={2}>
             {locations.map(location => (
-              <Grid size={{xs: 12, md: 6, lg: 3}} key={location}>
+              <Grid size={{
+                xs: 12,
+                md: locations.length === 1 ? 12 : locations.length === 2 ? 6 : 4,
+                lg: locations.length === 1 ? 12 : locations.length === 2 ? 6 : 3,
+              }} key={location}>
                 <Box sx={{ mb: 2 }}>
-                  <Box sx={{ mb: 2, textAlign: 'center', typography: 'h6' }}>
-                    {location.charAt(0).toUpperCase() + location.slice(1)}
+                  <Box sx={{ mb: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="h6">
+                      {location.charAt(0).toUpperCase() + location.slice(1)}
+                    </Typography>
+                    <Checkbox
+                      checked={activeLocations[location]}
+                      onChange={(e) => setActiveLocations(prev => ({
+                        ...prev,
+                        [location]: e.target.checked
+                      }))}
+                      // for some reason we get problems if we change the active locations while playing
+                      disabled={isPlaying}
+                      size="small"
+                    />
                   </Box>
-                  {mediaByLocation[location].videos
+                  {activeLocations[location] && mediaByLocation[location].videos
                     .sort((a, b) => {
                       const aIsTop = a.path.split('_')[2] === 'top';
                       const bIsTop = b.path.split('_')[2] === 'top';
@@ -163,7 +198,7 @@ function App() {
                       />
                     </Box>
                   ))}
-                  {mediaByLocation[location].audios.map(audio => (
+                  {activeLocations[location] && mediaByLocation[location].audios.map(audio => (
                     <Box sx={{ mb: 1 }} key={audio.path}>
                       <AudioPlayer
                         url={`${baseUrl}/${audio.path}`}
