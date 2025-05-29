@@ -3,18 +3,18 @@ import { Bout, ManifestData, ManifestItem } from '../types';
 
 interface UseBoutSummaryProps {
   url: string;
+  fileIndex: number;
   manifest: ManifestData;
   currentTime: number;
   setTime: (time: number) => void;
 }
 
-export const useBoutSummary = ({ url, manifest, currentTime, setTime }: UseBoutSummaryProps) => {
+export const useBoutSummary = ({ url, fileIndex, manifest, currentTime, setTime }: UseBoutSummaryProps) => {
   const [boutSummaryUrl, setBoutSummaryUrl] = useState<string>('');
   const [boutSummary, setBoutSummary] = useState<Bout[] | null>(null);
   const [selectedBoutId, setSelectedBoutId] = useState<number | null>(null);
 
   const handleBoutSelect = (boutId: number) => {
-    setSelectedBoutId(boutId);
     if (boutSummary) {
       const selectedBout = boutSummary.find(bout => bout.bout_id === boutId);
       if (selectedBout) {
@@ -65,13 +65,13 @@ export const useBoutSummary = ({ url, manifest, currentTime, setTime }: UseBoutS
   useEffect(() => {
     if (!boutSummary) return;
 
-    const currentBout = boutSummary.find(bout =>
+    const currentBout = boutSummary.filter(b => b.file_index === fileIndex).find(bout =>
       currentTime >= bout.bout_start_seconds &&
       currentTime <= bout.bout_end_seconds
     );
 
     setSelectedBoutId(currentBout ? currentBout.bout_id : null);
-  }, [currentTime, boutSummary]);
+  }, [currentTime, boutSummary, fileIndex]);
 
   return {
     boutSummary,

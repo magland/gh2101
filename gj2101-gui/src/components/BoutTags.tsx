@@ -17,7 +17,7 @@ export default function BoutTags({ tags, onAddTag, onRemoveTag }: BoutTagsProps)
                 <Chip
                     key={tag}
                     label={tag}
-                    onClick={() => isTagSelected(tag) ? onRemoveTag(tag) : onAddTag(tag)}
+                    onClick={(e) => (e.stopPropagation(), isTagSelected(tag) ? onRemoveTag(tag) : onAddTag(tag))}
                     sx={{
                         backgroundColor: isTagSelected(tag) ? 'success.main' : 'transparent',
                         borderColor: isTagSelected(tag) ? 'success.main' : 'grey.500',

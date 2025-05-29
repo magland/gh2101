@@ -164,11 +164,11 @@ export default function BoutSummaryTable({ boutSummary, selectedBoutId, onSelect
         <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell>Bout ID</TableCell>
-              <TableCell>Start (s)</TableCell>
-              <TableCell>End (s)</TableCell>
-              <TableCell># Calls</TableCell>
-              <TableCell>Tags</TableCell>
+              <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}>Bout ID</TableCell>
+              <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}>Start (s)</TableCell>
+              <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}>End (s)</TableCell>
+              <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}># Calls</TableCell>
+              <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}>Tags</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -184,11 +184,11 @@ export default function BoutSummaryTable({ boutSummary, selectedBoutId, onSelect
                   }
                 }}
               >
-                <TableCell>{bout.bout_id}</TableCell>
-                <TableCell>{bout.bout_start_seconds.toFixed(1)}</TableCell>
-                <TableCell>{bout.bout_end_seconds.toFixed(1)}</TableCell>
-                <TableCell>{bout.n_calls}</TableCell>
-                <TableCell>
+                <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}>{bout.bout_id}</TableCell>
+                <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}>{bout.bout_start_seconds.toFixed(1)}</TableCell>
+                <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}>{bout.bout_end_seconds.toFixed(1)}</TableCell>
+                <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}>{bout.n_calls}</TableCell>
+                <TableCell sx={{ padding: '2px 4px' }}>
                   <BoutTags
                     tags={getTagsForBout(bout.bout_id)}
                     onAddTag={(tag) => addTag(bout.bout_id, tag)}

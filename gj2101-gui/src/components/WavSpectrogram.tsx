@@ -41,7 +41,7 @@ const WavSpectrogram: React.FC<WavSpectrogramProps> = ({
 
   return (
     <Box
-      sx={{ width: 500, position: 'relative', height: 20, bgcolor: 'rgba(255, 255, 255, 0.1)' }}
+      sx={{ width: 800, position: 'relative', height: 20, bgcolor: 'rgba(255, 255, 255, 0.1)' }}
       onClick={(e) => {
         const rect = e.currentTarget.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -56,7 +56,7 @@ const WavSpectrogram: React.FC<WavSpectrogramProps> = ({
         alt="Audio spectrogram"
         style={{
           width: '100%',
-          height: 'auto',
+          height: 90,
           display: isLoading ? 'none' : 'block'
         }}
         onLoad={() => setIsLoading(false)}

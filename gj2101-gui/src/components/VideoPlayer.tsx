@@ -46,7 +46,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, title, currentTime, tota
   return (
       <Card>
         <CardContent>
-          <Typography variant="h6" gutterBottom>
+          <Typography variant="h6">
             {title}
           </Typography>
           <Paper elevation={3}>

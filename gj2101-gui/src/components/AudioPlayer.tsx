@@ -1,6 +1,6 @@
-import { Box, Card, CardContent, Typography, IconButton } from '@mui/material';
-import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import VolumeOffIcon from '@mui/icons-material/VolumeOff';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import { IconButton, Typography } from '@mui/material';
 import { useEffect, useRef } from 'react';
 
 interface AudioPlayerProps {
@@ -39,28 +39,24 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   }, [currentTime, totalDuration, isPlaying]);
 
   return (
-    <Card>
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-          <Typography variant="h6">
+    <>
+      <Typography variant="subtitle1">
             {title}
-          </Typography>
-          <IconButton onClick={onToggleMute} size="small">
-            {isMuted ? <VolumeOffIcon /> : <VolumeUpIcon />}
-          </IconButton>
-        </Box>
-        <audio
-          ref={audioRef}
-          style={{ display: 'none' }}
-          muted={isMuted}
-          controls
-          controlsList="nodownload"
-        >
-          <source src={url} type="audio/wav" />
-          Your browser does not support the audio tag.
-        </audio>
-      </CardContent>
-    </Card>
+      </Typography>
+      <IconButton onClick={onToggleMute} size="small">
+        {isMuted ? <VolumeOffIcon /> : <VolumeUpIcon />}
+      </IconButton>
+      <audio
+        ref={audioRef}
+        style={{ display: 'none' }}
+        muted={isMuted}
+        controls
+        controlsList="nodownload"
+      >
+        <source src={url} type="audio/wav" />
+        Your browser does not support the audio tag.
+      </audio>
+    </>
   );
 };
 

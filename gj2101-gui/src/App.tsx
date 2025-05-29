@@ -55,6 +55,7 @@ function App() {
 
   const { boutSummary, selectedBoutId, handleBoutSelect } = useBoutSummary({
     url,
+    fileIndex,
     manifest,
     currentTime,
     setTime
@@ -71,12 +72,12 @@ function App() {
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
       <Container maxWidth={false}>
-        <Box sx={{ flexGrow: 1, p: 2 }}>
-          <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'center' }}>
-            <IconButton onClick={handlePlayPause} size="large" color="primary">
+        <Box sx={{ flexGrow: 1, p: 0 }}>
+          <Box>
+            <IconButton onClick={handlePlayPause} size="small" color="primary">
               {isPlaying ? <PauseIcon /> : <PlayArrowIcon />}
             </IconButton>
-            <IconButton onClick={handleReset} size="large">
+            <IconButton onClick={handleReset} size="small">
               <RestartAltIcon />
             </IconButton>
             <Typography variant="h6">
@@ -128,44 +129,55 @@ function App() {
             </Box>
             <Box sx={{
               display: 'flex',
-              flexWrap: 'wrap',
+              flexDirection: 'column',
               gap: 2,
-              flex: 1,
-              '& > div': {
-                flex: 1,
-                minWidth: '450px'
-              }
+              flex: 1
             }}>
               {locations.map((location: string) => (
                 <div key={location}>
-                  <Box sx={{ mb: 2 }}>
-                    <Box sx={{ mb: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="h6">
-                        {location}
-                      </Typography>
+                  <Box sx={{ mb: 0 }}>
+                    <Box sx={{ mb: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Checkbox
                         checked={activeLocations[location]}
                         onChange={() => toggleLocation(location)}
                         disabled={isToggleDisabled}
                         size="small"
                       />
+                      <Typography variant="h6" sx={{ flex: 1 }}>
+                        {location}
+                      </Typography>
+                      <Box sx={{ width: 42 }} /> {/* Spacer to balance the checkbox */}
                     </Box>
-                    {activeLocations[location] && sortVideos(mediaByLocation[location].videos)
-                      .map((video: ManifestItem) => (
-                        <Box sx={{ mb: 1 }} key={video.path}>
-                          <VideoPlayer
-                            url={`${baseUrl}/${video.path}`}
-                            title={video.path.split('/').pop() || ''}
-                            currentTime={currentTime}
-                            totalDuration={totalDuration}
-                            isPlaying={isPlaying}
-                            shouldFlip={video.path === 'video_burrow_side_50.mp4'}
-                          />
-                        </Box>
-                      ))}
+                    {activeLocations[location] && (
+                      <Box sx={{
+                        display: 'flex',
+                        gap: 2,
+                        overflowX: 'auto',
+                        mb: 2,
+                        pb: 1 /* Space for scrollbar */
+                      }}>
+                        {sortVideos(mediaByLocation[location].videos)
+                          .map((video: ManifestItem) => (
+                            <Box sx={{
+                              flex: '0 0 auto',
+                              width: 'clamp(200px, 45%, 1800px)'
+                            }} key={video.path}>
+                              <VideoPlayer
+                                url={`${baseUrl}/${video.path}`}
+                                title=""
+                                // title={video.path.split('/').pop() || ''}
+                                currentTime={currentTime}
+                                totalDuration={totalDuration}
+                                isPlaying={isPlaying}
+                                shouldFlip={video.path === 'video_burrow_side_50.mp4'}
+                              />
+                            </Box>
+                          ))}
+                      </Box>
+                    )}
                     {activeLocations[location] && mediaByLocation[location].audios.map((audio: ManifestItem) => (
-                      <Box sx={{ mb: 1 }} key={audio.path}>
-                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+                      <>
+                        <Box sx={{ display: 'flex', gap: 0, alignItems: 'flex-start' }}>
                           <AudioPlayer
                             url={`${baseUrl}/${audio.path}`}
                             title={audio.path.split('/').pop() || ''}
@@ -181,7 +193,7 @@ function App() {
                           />
                         </Box>
                         {showSpectrograms[audio.path] && (
-                          <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+                          <Box sx={{ display: 'flex', gap: 0, alignItems: 'flex-start' }}>
                             <WavSpectrogram
                               url={`${baseUrl}/${audio.path}`}
                               currentTime={currentTime}
@@ -189,7 +201,7 @@ function App() {
                             />
                           </Box>
                         )}
-                      </Box>
+                      </>
                     ))}
                   </Box>
                 </div>
