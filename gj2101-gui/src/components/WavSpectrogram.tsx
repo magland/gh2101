@@ -41,7 +41,7 @@ const WavSpectrogram: React.FC<WavSpectrogramProps> = ({
 
   return (
     <Box
-      sx={{ width: 500, position: 'relative', height: 200, bgcolor: 'rgba(255, 255, 255, 0.1)' }}
+      sx={{ width: 500, position: 'relative', height: 20, bgcolor: 'rgba(255, 255, 255, 0.1)' }}
       onClick={(e) => {
         const rect = e.currentTarget.getBoundingClientRect();
         const x = e.clientX - rect.left;
