@@ -1,38 +1,26 @@
 import { useEffect, useState } from 'react';
-import { Box, Container, CssBaseline, ThemeProvider, createTheme, IconButton, Typography, Checkbox } from '@mui/material';
+import { useTimekeeper } from './hooks/useTimekeeper';
+import { Box, Container, CssBaseline, ThemeProvider, IconButton, Typography, Checkbox } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import queryString from 'query-string';
-import { ManifestData } from './types';
+import { ManifestData, ManifestItem } from './types';
 import VideoPlayer from './components/VideoPlayer';
 import AudioPlayer from './components/AudioPlayer';
 import BoutSummaryTable from './components/BoutSummaryTable';
-
-const darkTheme = createTheme({
-  palette: {
-    mode: 'dark',
-  },
-});
-
-type BoutSummary = {
-  exp: number;
-  file_index: number;
-  bout_id: number;
-  bout_start_seconds: number;
-  bout_end_seconds: number;
-  n_calls: number;
-  bout_duration_seconds: number;
-}[];
+import { darkTheme } from './theme/darkTheme';
+import { useBoutSummary } from './hooks/useBoutSummary';
+import { useMediaOrganization } from './hooks/useMediaOrganization';
+import { useActiveLocations } from './hooks/useActiveLocations';
 
 function App() {
   const [manifest, setManifest] = useState<ManifestData>([]);
   const [baseUrl, setBaseUrl] = useState<string>('');
-  const [currentTime, setCurrentTime] = useState<number>(0);
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [mutedAudios, setMutedAudios] = useState<Record<string, boolean>>({});
-  const [activeLocations, setActiveLocations] = useState<Record<string, boolean>>({});
   const totalDuration = 360; // 6 minutes in seconds
+
+  const { currentTime, isPlaying, handlePlayPause, handleReset, setTime } = useTimekeeper({ totalDuration });
 
   const handleToggleMute = (audioPath: string) => {
     setMutedAudios(prev => ({
@@ -40,51 +28,6 @@ function App() {
       [audioPath]: !prev[audioPath]
     }));
   };
-
-  useEffect(() => {
-    let intervalId: number;
-    if (isPlaying) {
-      intervalId = window.setInterval(() => {
-        setCurrentTime(time => {
-          if (time >= totalDuration) {
-            setIsPlaying(false);
-            return totalDuration;
-          }
-          return time + 1;
-        });
-      }, 1000);
-    }
-    return () => {
-      if (intervalId) window.clearInterval(intervalId);
-    };
-  }, [isPlaying, totalDuration]);
-
-  const handlePlayPause = () => {
-    setIsPlaying(!isPlaying);
-  };
-
-  const handleReset = () => {
-    setCurrentTime(0);
-    setIsPlaying(false);
-  };
-
-  // Load activeLocations from localStorage
-  useEffect(() => {
-    const storedData = localStorage.getItem('activeLocations');
-    const storedBaseUrlForActiveLocations = localStorage.getItem('baseUrlForActiveLocations');
-
-    if (storedData && storedBaseUrlForActiveLocations === baseUrl) {
-      setActiveLocations(JSON.parse(storedData));
-    }
-  }, [baseUrl]);
-
-  // Save activeLocations to localStorage when changed
-  useEffect(() => {
-    if (baseUrl) {
-      localStorage.setItem('activeLocations', JSON.stringify(activeLocations));
-      localStorage.setItem('baseUrlForActiveLocations', baseUrl);
-    }
-  }, [activeLocations, baseUrl]);
 
   const query = queryString.parse(window.location.search);
   const url = query.baseUrl as string;
@@ -100,93 +43,20 @@ function App() {
     }
   }, [url]);
 
-  const [boutSummaryUrl, setBoutSummaryUrl] = useState<string>('');
-  const [boutSummary, setBoutSummary] = useState<BoutSummary | null>(null);
-  const [selectedBoutId, setSelectedBoutId] = useState<number | null>(null);
+  const { boutSummary, selectedBoutId, handleBoutSelect } = useBoutSummary({
+    url,
+    manifest,
+    fileIndex,
+    currentTime,
+    setTime
+  });
 
-  const handleBoutSelect = (boutId: number) => {
-    setSelectedBoutId(boutId);
-    if (boutSummary) {
-      const selectedBout = boutSummary.find(bout => bout.bout_id === boutId);
-      if (selectedBout) {
-        setCurrentTime(selectedBout.bout_start_seconds);
-      }
-    }
-  };
-  useEffect(() => {
-    setBoutSummaryUrl("");
-    if (!url) return;
-    if (!manifest || manifest.length === 0) return;
-    // find bout_summary.csv
-    const boutSummaryFile = manifest.find(item => item.path.split('/').pop() === 'bout_summary.csv');
-    setBoutSummaryUrl(boutSummaryFile ? `${url}/${boutSummaryFile.path}` : '');
-  }, [manifest, url]);
-  useEffect(() => {
-    setBoutSummary(null);
-    if (!boutSummaryUrl) return;
-    fetch(boutSummaryUrl)
-      .then(response => response.text())
-      .then(text => {
-        const lines = text.split('\n');
-        const headerLine = lines[0];
-        const columnNames = headerLine.split(',').map(name => name.trim());
-        const data = lines.slice(1).map(line => {
-          const values = line.split(',').map(value => value.trim());
-          const boutData: {[key: string]: number | string} = {};
-          columnNames.forEach((name, index) => {
-            if (name === 'bout_start_seconds' || name === 'bout_end_seconds' || name === 'bout_duration_seconds') {
-              boutData[name] = parseFloat(values[index]);
-            } else if (name === 'exp' || name === 'file_index' || name === 'bout_id' || name === 'n_calls') {
-              boutData[name] = parseInt(values[index], 10);
-            } else {
-              console.warn(`Unknown column name: ${name}`);
-            }
-          });
-          return boutData;
-        });
-        setBoutSummary((data as BoutSummary).filter(bout => bout.file_index === parseInt(fileIndex, 10)));
-      })
-      .catch(error => console.error('Error loading bout summary:', error));
-  }, [boutSummaryUrl, fileIndex]);
+  const { mediaByLocation, locations, sortVideos } = useMediaOrganization({ manifest, fileIndex });
 
-  // Update selected bout based on current time
-  useEffect(() => {
-    if (!boutSummary) return;
-
-    const currentBout = boutSummary.find(bout =>
-      currentTime >= bout.bout_start_seconds &&
-      currentTime <= bout.bout_end_seconds
-    );
-
-    setSelectedBoutId(currentBout ? currentBout.bout_id : null);
-  }, [currentTime, boutSummary]);
-
-  // Group media files by location
-  const mediaByLocation = manifest.reduce((acc, item) => {
-    const name = item.path.split("/").pop()?.split(".")[0];
-    const location = item.path.endsWith(".mp4") ? name?.split('_')[1] || "" : name?.split('_')?.slice(0, 2).join("_") || "";
-    const fileIndex0 = name?.split('_').pop() || "";
-    if (fileIndex0 !== fileIndex) {
-      return acc; // Skip items that are not from the file index
-    }
-    if (!acc[location]) {
-      acc[location] = { videos: [], audios: [] };
-    }
-    if (item.path.endsWith('.mp4')) {
-      acc[location].videos.push(item);
-    } else if (item.path.endsWith('.wav')) {
-      acc[location].audios.push(item);
-    }
-    return acc;
-  }, {} as Record<string, { videos: typeof manifest, audios: typeof manifest }>);
-
-  const locations = Object.keys(mediaByLocation).sort((a, b) => {
-    const aHasTop = mediaByLocation[a].videos.some(v => v.path.split('_')[2] === 'top');
-    const bHasTop = mediaByLocation[b].videos.some(v => v.path.split('_')[2] === 'top');
-    if (aHasTop && !bHasTop) return -1;
-    if (!aHasTop && bHasTop) return 1;
-    return a.localeCompare(b);
-  }).slice(0, 4);
+  const { activeLocations, toggleLocation, isToggleDisabled } = useActiveLocations({
+    baseUrl,
+    isPlaying
+  });
 
   return (
     <ThemeProvider theme={darkTheme}>
@@ -218,7 +88,7 @@ function App() {
               const x = e.clientX - rect.left;
               const percentage = x / rect.width;
               const newTime = Math.max(0, Math.min(totalDuration, Math.floor(percentage * totalDuration)));
-              setCurrentTime(newTime);
+              setTime(newTime);
             }}
           >
             <Box
@@ -251,7 +121,7 @@ function App() {
                 minWidth: '450px'
               }
             }}>
-              {locations.map(location => (
+              {locations.map((location: string) => (
                 <div key={location}>
                   <Box sx={{ mb: 2 }}>
                     <Box sx={{ mb: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
@@ -260,24 +130,13 @@ function App() {
                       </Typography>
                       <Checkbox
                         checked={activeLocations[location]}
-                        onChange={(e) => setActiveLocations(prev => ({
-                          ...prev,
-                          [location]: e.target.checked
-                        }))}
-                        // for some reason we get problems if we change the active locations while playing
-                        disabled={isPlaying}
+                        onChange={() => toggleLocation(location)}
+                        disabled={isToggleDisabled}
                         size="small"
                       />
                     </Box>
-                    {activeLocations[location] && mediaByLocation[location].videos
-                      .sort((a, b) => {
-                        const aIsTop = a.path.split('_')[2] === 'top';
-                        const bIsTop = b.path.split('_')[2] === 'top';
-                        if (aIsTop && !bIsTop) return -1;
-                        if (!aIsTop && bIsTop) return 1;
-                        return 0;
-                      })
-                      .map(video => (
+                    {activeLocations[location] && sortVideos(mediaByLocation[location].videos)
+                      .map((video: ManifestItem) => (
                         <Box sx={{ mb: 1 }} key={video.path}>
                           <VideoPlayer
                             url={`${baseUrl}/${video.path}`}
@@ -289,7 +148,7 @@ function App() {
                           />
                         </Box>
                       ))}
-                    {activeLocations[location] && mediaByLocation[location].audios.map(audio => (
+                    {activeLocations[location] && mediaByLocation[location].audios.map((audio: ManifestItem) => (
                       <Box sx={{ mb: 1 }} key={audio.path}>
                         <AudioPlayer
                           url={`${baseUrl}/${audio.path}`}

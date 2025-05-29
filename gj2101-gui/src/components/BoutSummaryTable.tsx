@@ -1,17 +1,8 @@
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
-
-type BoutSummary = {
-  exp: number;
-  file_index: number;
-  bout_id: number;
-  bout_start_seconds: number;
-  bout_end_seconds: number;
-  n_calls: number;
-  bout_duration_seconds: number;
-}[];
+import { Bout } from '../types';
 
 interface BoutSummaryTableProps {
-  boutSummary: BoutSummary | null;
+  boutSummary: Bout[] | null;
   selectedBoutId: number | null;
   onSelectBout: (boutId: number) => void;
 }
