@@ -1,0 +1,7 @@
+fsspec
+soundfile
+numpy
+scipy
+pillow
+requests
+aiohttp

@@ -8,6 +8,8 @@ import queryString from 'query-string';
 import { ManifestData, ManifestItem } from './types';
 import VideoPlayer from './components/VideoPlayer';
 import AudioPlayer from './components/AudioPlayer';
+import WavSpectrogram from './components/WavSpectrogram';
+import SpectrogramToggle from './components/SpectrogramToggle';
 import BoutSummaryTable from './components/BoutSummaryTable';
 import { darkTheme } from './theme/darkTheme';
 import { useBoutSummary } from './hooks/useBoutSummary';
@@ -18,12 +20,20 @@ function App() {
   const [manifest, setManifest] = useState<ManifestData>([]);
   const [baseUrl, setBaseUrl] = useState<string>('');
   const [mutedAudios, setMutedAudios] = useState<Record<string, boolean>>({});
+  const [showSpectrograms, setShowSpectrograms] = useState<Record<string, boolean>>({});
   const totalDuration = 360; // 6 minutes in seconds
 
   const { currentTime, isPlaying, handlePlayPause, handleReset, setTime } = useTimekeeper({ totalDuration });
 
   const handleToggleMute = (audioPath: string) => {
     setMutedAudios(prev => ({
+      ...prev,
+      [audioPath]: !prev[audioPath]
+    }));
+  };
+
+  const handleToggleSpectrogram = (audioPath: string) => {
+    setShowSpectrograms(prev => ({
       ...prev,
       [audioPath]: !prev[audioPath]
     }));
@@ -150,15 +160,30 @@ function App() {
                       ))}
                     {activeLocations[location] && mediaByLocation[location].audios.map((audio: ManifestItem) => (
                       <Box sx={{ mb: 1 }} key={audio.path}>
-                        <AudioPlayer
-                          url={`${baseUrl}/${audio.path}`}
-                          title={audio.path.split('/').pop() || ''}
-                          currentTime={currentTime}
-                          totalDuration={totalDuration}
-                          isPlaying={isPlaying}
-                          isMuted={mutedAudios[audio.path] || false}
-                          onToggleMute={() => handleToggleMute(audio.path)}
-                        />
+                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+                          <AudioPlayer
+                            url={`${baseUrl}/${audio.path}`}
+                            title={audio.path.split('/').pop() || ''}
+                            currentTime={currentTime}
+                            totalDuration={totalDuration}
+                            isPlaying={isPlaying}
+                            isMuted={mutedAudios[audio.path] || false}
+                            onToggleMute={() => handleToggleMute(audio.path)}
+                          />
+                          <SpectrogramToggle
+                            isVisible={showSpectrograms[audio.path] || false}
+                            onToggle={() => handleToggleSpectrogram(audio.path)}
+                          />
+                        </Box>
+                        {showSpectrograms[audio.path] && (
+                          <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+                            <WavSpectrogram
+                              url={`${baseUrl}/${audio.path}`}
+                              currentTime={currentTime}
+                              onTimeChange={setTime}
+                            />
+                          </Box>
+                        )}
                       </Box>
                     ))}
                   </Box>
