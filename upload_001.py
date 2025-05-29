@@ -6,33 +6,48 @@ import tempfile
 
 def main():
     s3 = _get_s3_client()
-    dirname = 'data/from_gily/from_gily_001'
+    # dirname = 'data/from_gily/from_gily_001'
+    dirname = 'data/from_gily/237'
 
-    # get all the file names in the directory
-    file_names = os.listdir(dirname)
-    for fname in file_names:
-        upload_key = f'from_gily/from_gily_001/{fname}'
-        if not _exists_in_bucket(s3, 'tempory', upload_key):
-            print(f"Uploading {fname} to S3...")
-            _upload_file_to_s3(
-                s3,
-                'tempory',
-                upload_key,
-                os.path.join(dirname, fname)
-            )
-        else:
-            print(f"File {fname} already exists in S3 bucket.")
+    # First count total number of files
+    total_files = sum([len(files) for _, _, files in os.walk(dirname)])
+    print(f"Found {total_files} files to process")
 
-    # Create manifest data
+    # Walk through directory recursively
     manifest_data = []
-    for fname in os.listdir(dirname):
-        fpath = os.path.join(dirname, fname)
-        fsize = os.path.getsize(fpath)
-        manifest_data.append({
-            "path": fname,
-            "size": fsize
-        })
-    manifest_key = 'from_gily/from_gily_001/manifest.json'
+    processed_files = 0
+    for root, dirs, files in os.walk(dirname):
+        # Get relative path from the dirname
+        rel_path = os.path.relpath(root, dirname)
+
+        for fname in files:
+            # Calculate relative file path for S3 and manifest
+            file_rel_path = os.path.join(rel_path, fname) if rel_path != '.' else fname
+            upload_key = f'from_gily/237/{file_rel_path}'
+            full_path = os.path.join(root, fname)
+
+            processed_files += 1
+            fsize = os.path.getsize(full_path)
+            size_mb = fsize / (1024 * 1024)
+            print(f"Processing file {processed_files}/{total_files}: {file_rel_path} ({size_mb:.2f} MB)")
+
+            if not _exists_in_bucket(s3, 'tempory', upload_key):
+                print(f"Uploading to S3...")
+                _upload_file_to_s3(
+                    s3,
+                    'tempory',
+                    upload_key,
+                    full_path
+                )
+            else:
+                print(f"File {file_rel_path} already exists in S3 bucket.")
+
+            # Add to manifest (size already calculated above)
+            manifest_data.append({
+                "path": file_rel_path,
+                "size": fsize
+            })
+    manifest_key = 'from_gily/237/manifest.json'
     with tempfile.TemporaryDirectory() as tmpdir:
         manifest_path = os.path.join(tmpdir, "manifest.json")
         with open(manifest_path, "w") as f:
