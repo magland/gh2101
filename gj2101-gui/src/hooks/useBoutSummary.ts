@@ -4,12 +4,11 @@ import { Bout, ManifestData, ManifestItem } from '../types';
 interface UseBoutSummaryProps {
   url: string;
   manifest: ManifestData;
-  fileIndex: string;
   currentTime: number;
   setTime: (time: number) => void;
 }
 
-export const useBoutSummary = ({ url, manifest, fileIndex, currentTime, setTime }: UseBoutSummaryProps) => {
+export const useBoutSummary = ({ url, manifest, currentTime, setTime }: UseBoutSummaryProps) => {
   const [boutSummaryUrl, setBoutSummaryUrl] = useState<string>('');
   const [boutSummary, setBoutSummary] = useState<Bout[] | null>(null);
   const [selectedBoutId, setSelectedBoutId] = useState<number | null>(null);
@@ -57,10 +56,10 @@ export const useBoutSummary = ({ url, manifest, fileIndex, currentTime, setTime 
           });
           return boutData;
         });
-        setBoutSummary((data as Bout[]).filter(bout => bout.file_index === parseInt(fileIndex, 10)));
+        setBoutSummary(data as Bout[]);
       })
       .catch(error => console.error('Error loading bout summary:', error));
-  }, [boutSummaryUrl, fileIndex]);
+  }, [boutSummaryUrl]);
 
   // Update selected bout based on current time
   useEffect(() => {

@@ -3,7 +3,7 @@ import { ManifestData, MediaLocationMap } from '../types';
 
 interface UseMediaOrganizationProps {
   manifest: ManifestData;
-  fileIndex: string;
+  fileIndex: number;
 }
 
 export const useMediaOrganization = ({ manifest, fileIndex }: UseMediaOrganizationProps) => {
@@ -17,7 +17,7 @@ export const useMediaOrganization = ({ manifest, fileIndex }: UseMediaOrganizati
       const location = item.path.endsWith(".mp4")
         ? name?.split('_')[1] || ""
         : name?.split('_')?.slice(0, 2).join("_") || "";
-      const fileIndex0 = name?.split('_').pop() || "";
+      const fileIndex0 = parseInt(name?.split('_').pop() || "");
 
       if (fileIndex0 !== fileIndex) {
         return acc; // Skip items that are not from the file index

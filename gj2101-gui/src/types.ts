@@ -24,6 +24,11 @@ export type MediaLocationMap = Record<string, MediaByLocation>;
 
 export type ActiveLocationsMap = Record<string, boolean>;
 
+export interface BoutTag {
+  bout: number;
+  name: string;
+}
+
 export interface LocationStorageData {
   activeLocations: ActiveLocationsMap;
   baseUrl: string;

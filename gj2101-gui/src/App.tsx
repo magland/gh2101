@@ -41,7 +41,7 @@ function App() {
 
   const query = queryString.parse(window.location.search);
   const url = query.baseUrl as string;
-  const fileIndex = query.fileIndex as string || '';
+  const fileIndex = parseInt(query.fileIndex as string || '');
 
   useEffect(() => {
     if (url) {
@@ -56,7 +56,6 @@ function App() {
   const { boutSummary, selectedBoutId, handleBoutSelect } = useBoutSummary({
     url,
     manifest,
-    fileIndex,
     currentTime,
     setTime
   });
@@ -114,11 +113,17 @@ function App() {
             />
           </Box>
           <Box sx={{ display: 'flex', gap: 2 }}>
-            <Box sx={{ flexShrink: 0 }}>
+            <Box sx={{
+              flexShrink: 0,
+              width: 'clamp(200px, 25%, 800px)'
+            }}>
               <BoutSummaryTable
                 boutSummary={boutSummary}
                 selectedBoutId={selectedBoutId}
                 onSelectBout={handleBoutSelect}
+                manifest={manifest}
+                baseUrl={baseUrl}
+                fileIndex={fileIndex}
               />
             </Box>
             <Box sx={{
