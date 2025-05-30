@@ -7,7 +7,7 @@ import {
   Typography
 } from "@mui/material";
 import queryString from "query-string";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import ActiveLocationsSelector from "./components/ActiveLocationsSelector";
 import AudioPlayer from "./components/AudioPlayer";
 import BoutSummaryTable from "./components/BoutSummaryTable";
@@ -20,6 +20,7 @@ import { useActiveLocations } from "./hooks/useActiveLocations";
 import { useBoutSummary } from "./hooks/useBoutSummary";
 import { useMediaOrganization } from "./hooks/useMediaOrganization";
 import { useTimekeeper } from "./hooks/useTimekeeper";
+import { useMediaDuration } from "./hooks/useMediaDuration";
 import { useWindowDimensions } from "./hooks/useWindowDimensions";
 import { ManifestData, ManifestItem } from "./types";
 
@@ -30,10 +31,17 @@ function App() {
   const [showSpectrograms, setShowSpectrograms] = useState<
     Record<string, boolean>
   >({});
-  const totalDuration = 360; // 6 minutes in seconds
+  const query = queryString.parse(window.location.search);
+  const url = query.baseUrl as string;
+  const fileIndex = parseInt((query.fileIndex as string) || "");
+  const { totalDuration, registerDuration } = useMediaDuration();
 
   const { currentTime, isPlaying, handlePlayPause, handleReset, setTime } =
     useTimekeeper({ totalDuration });
+
+  const handleMediaDuration = useCallback((duration: number) => {
+    registerDuration(duration);
+  }, [registerDuration]);
 
   const handleToggleMute = (audioPath: string) => {
     setMutedAudios((prev) => ({
@@ -48,10 +56,6 @@ function App() {
       [audioPath]: !prev[audioPath],
     }));
   };
-
-  const query = queryString.parse(window.location.search);
-  const url = query.baseUrl as string;
-  const fileIndex = parseInt((query.fileIndex as string) || "");
 
   useEffect(() => {
     if (url) {
@@ -188,17 +192,19 @@ function App() {
                           }}
                           key={video.path}
                         >
-                          <VideoPlayer
-                            url={`${baseUrl}/${video.path}`}
-                            title=""
-                            // title={video.path.split('/').pop() || ''}
-                            currentTime={currentTime}
-                            totalDuration={totalDuration}
-                            isPlaying={isPlaying}
-                            shouldFlip={
-                              video.path === "video_burrow_side_50.mp4"
-                            }
-                          />
+                              <VideoPlayer
+                                url={`${baseUrl}/${video.path}`}
+                                title=""
+                                // title={video.path.split('/').pop() || ''}
+                                currentTime={currentTime}
+                                isPlaying={isPlaying}
+                                shouldFlip={
+                                  video.path === "video_burrow_side_50.mp4"
+                                }
+                                onLoadedMetadata={(duration) =>
+                                  handleMediaDuration(duration)
+                                }
+                              />
                         </Box>
                       )
                     )}
@@ -208,15 +214,18 @@ function App() {
                       (audio: ManifestItem) => (
                         <>
                           <div>
-                            <AudioPlayer
-                              url={`${baseUrl}/${audio.path}`}
-                              title={audio.path.split("/").pop() || ""}
-                              currentTime={currentTime}
-                              totalDuration={totalDuration}
-                              isPlaying={isPlaying}
-                              isMuted={mutedAudios[audio.path] || false}
-                              onToggleMute={() => handleToggleMute(audio.path)}
-                            />
+                              <AudioPlayer
+                                url={`${baseUrl}/${audio.path}`}
+                                title={audio.path.split("/").pop() || ""}
+                                currentTime={currentTime}
+                                totalDuration={totalDuration}
+                                isPlaying={isPlaying}
+                                isMuted={mutedAudios[audio.path] || false}
+                                onToggleMute={() => handleToggleMute(audio.path)}
+                                onLoadedMetadata={(duration) =>
+                                  handleMediaDuration(duration)
+                                }
+                              />
                             <SpectrogramToggle
                               isVisible={showSpectrograms[audio.path] || false}
                               onToggle={() =>

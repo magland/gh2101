@@ -11,6 +11,7 @@ interface AudioPlayerProps {
   isPlaying: boolean;
   isMuted: boolean;
   onToggleMute: () => void;
+  onLoadedMetadata?: (duration: number) => void;
 }
 
 const AudioPlayer: React.FC<AudioPlayerProps> = ({
@@ -20,7 +21,8 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   totalDuration,
   isPlaying,
   isMuted,
-  onToggleMute
+  onToggleMute,
+  onLoadedMetadata
 }) => {
   const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -37,6 +39,23 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
       }
     }
   }, [currentTime, totalDuration, isPlaying]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      const handleLoadedMetadata = () => {
+        if (onLoadedMetadata && !isNaN(audio.duration)) {
+          onLoadedMetadata(audio.duration);
+        }
+      };
+      audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+      // If already loaded, call immediately
+      if (audio.duration) handleLoadedMetadata();
+      return () => {
+        audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      };
+    }
+  }, [onLoadedMetadata]);
 
   return (
     <>

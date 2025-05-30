@@ -5,18 +5,41 @@ interface VideoPlayerProps {
   url: string;
   title: string;
   currentTime: number;
-  totalDuration: number;
   isPlaying: boolean;
   shouldFlip?: boolean;
+  onLoadedMetadata?: (duration: number) => void;
 }
 
-const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, title, currentTime, totalDuration, isPlaying, shouldFlip }) => {
+const VideoPlayer: React.FC<VideoPlayerProps> = ({
+  url,
+  title,
+  currentTime,
+  isPlaying,
+  shouldFlip,
+  onLoadedMetadata
+}) => {
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
   const [isSeeking, setIsSeeking] = useState(false);
 
   useEffect(() => {
     if (videoElement) {
-      if (!isNaN(currentTime) && currentTime >= 0 && currentTime <= totalDuration) {
+      const handleLoadedMetadata = () => {
+        if (onLoadedMetadata && !isNaN(videoElement.duration)) {
+          onLoadedMetadata(videoElement.duration);
+        }
+      };
+      videoElement.addEventListener('loadedmetadata', handleLoadedMetadata);
+      // If already loaded, call immediately
+      if (videoElement.duration) handleLoadedMetadata();
+      return () => {
+        videoElement.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      };
+    }
+  }, [videoElement, onLoadedMetadata]);
+
+  useEffect(() => {
+    if (videoElement) {
+      if (!isNaN(currentTime) && currentTime >= 0) {
         videoElement.currentTime = currentTime;
       }
       if (isPlaying) {
@@ -25,7 +48,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, title, currentTime, tota
         videoElement.pause();
       }
     }
-  }, [currentTime, totalDuration, isPlaying, videoElement]);
+  }, [currentTime, isPlaying, videoElement]);
 
   const [displaySeeking, setDisplaySeeking] = useState(false);
   useEffect(() => {

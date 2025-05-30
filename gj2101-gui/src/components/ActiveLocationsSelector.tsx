@@ -1,4 +1,4 @@
-import { Box, Checkbox, FormControlLabel, Stack, Typography } from "@mui/material";
+import { Box, Checkbox, FormControlLabel, Stack } from "@mui/material";
 
 interface ActiveLocationsSelectorProps {
   activeLocations: Record<string, boolean>;
