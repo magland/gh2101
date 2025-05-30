@@ -5,10 +5,7 @@ interface UseTimekeeperProps {
 }
 
 export function useTimekeeper({ totalDuration }: UseTimekeeperProps) {
-  const [currentTime, setCurrentTime] = useState<number>(() => {
-    const savedTime = localStorage.getItem('timekeeper-current-time');
-    return savedTime ? Math.min(Number(savedTime), totalDuration) : 0;
-  });
+  const [currentTime, setCurrentTime] = useState<number>(parseInt(localStorage.getItem('timekeeper-current-time') || "0"))
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
 
   const setTime = useMemo(() => ((time: number) => {
