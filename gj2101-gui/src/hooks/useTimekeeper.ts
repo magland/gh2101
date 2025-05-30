@@ -4,8 +4,13 @@ interface UseTimekeeperProps {
   totalDuration: number;
 }
 
+const safeParseInt = (value: string, fallback: number = 0): number => {
+  const parsed = parseInt(value, 10);
+  return isNaN(parsed) ? fallback : parsed;
+};
+
 export function useTimekeeper({ totalDuration }: UseTimekeeperProps) {
-  const [currentTime, setCurrentTime] = useState<number>(parseInt(localStorage.getItem('timekeeper-current-time') || "0"))
+  const [currentTime, setCurrentTime] = useState<number>(safeParseInt(localStorage.getItem('timekeeper-current-time') || "0"))
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
 
   const setTime = useMemo(() => ((time: number) => {
