@@ -1,6 +1,6 @@
 import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
-import { IconButton, Typography } from '@mui/material';
+import { IconButton } from '@mui/material';
 import { useEffect, useRef } from 'react';
 
 interface AudioPlayerProps {
@@ -40,9 +40,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
   return (
     <>
-      <Typography variant="subtitle1">
-            {title}
-      </Typography>
+      {title}
       <IconButton onClick={onToggleMute} size="small">
         {isMuted ? <VolumeOffIcon /> : <VolumeUpIcon />}
       </IconButton>

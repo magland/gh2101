@@ -5,12 +5,14 @@ interface WavSpectrogramProps {
   url: string;
   currentTime: number;
   onTimeChange: (time: number) => void;
+  width: number;
 }
 
 const WavSpectrogram: React.FC<WavSpectrogramProps> = ({
   url,
   currentTime,
-  onTimeChange
+  onTimeChange,
+  width
 }) => {
   // Calculate the 10-second window that contains the current time
   const spectrogramWindow = useMemo(() => {
@@ -41,7 +43,7 @@ const WavSpectrogram: React.FC<WavSpectrogramProps> = ({
 
   return (
     <Box
-      sx={{ width: 800, position: 'relative', height: 20, bgcolor: 'rgba(255, 255, 255, 0.1)' }}
+      sx={{ width, position: 'relative', height: 90, bgcolor: 'rgba(255, 255, 255, 0.1)' }}
       onClick={(e) => {
         const rect = e.currentTarget.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -68,7 +70,7 @@ const WavSpectrogram: React.FC<WavSpectrogramProps> = ({
           top: 0,
           bottom: 0,
           width: '2px',
-          bgcolor: 'primary.main',
+          bgcolor: 'yellow',
           zIndex: 1
         }}
       />

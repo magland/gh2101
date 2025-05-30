@@ -19,9 +19,9 @@ export default function BoutTags({ tags, onAddTag, onRemoveTag }: BoutTagsProps)
                     label={tag}
                     onClick={(e) => (e.stopPropagation(), isTagSelected(tag) ? onRemoveTag(tag) : onAddTag(tag))}
                     sx={{
-                        backgroundColor: isTagSelected(tag) ? 'success.main' : 'transparent',
-                        borderColor: isTagSelected(tag) ? 'success.main' : 'grey.500',
-                        color: isTagSelected(tag) ? '#fff' : 'rgba(255, 255, 255, 0.4)',
+                        backgroundColor: isTagSelected(tag) ? 'success.main' : '#eee',
+                        borderColor: isTagSelected(tag) ? 'success.main' : 'black',
+                        color: isTagSelected(tag) ? '#fff' : '#888',
                         '&:hover': {
                             backgroundColor: isTagSelected(tag) ? 'success.dark' : 'rgba(255, 255, 255, 0.1)'
                         }

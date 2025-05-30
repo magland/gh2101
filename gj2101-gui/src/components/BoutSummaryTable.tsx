@@ -72,7 +72,7 @@ export default function BoutSummaryTable({ boutSummary, selectedBoutId, onSelect
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1, gap: 1, alignItems: 'center' }}>
+      <>
         <Tooltip title="Download Annotations">
           <IconButton onClick={handleDownload} size="small">
             <DownloadIcon />
@@ -146,7 +146,7 @@ export default function BoutSummaryTable({ boutSummary, selectedBoutId, onSelect
             <DeleteIcon />
           </IconButton>
         </Tooltip>
-      </Box>
+      </>
       <Dialog
         open={clearDialogOpen}
         onClose={() => setClearDialogOpen(false)}
@@ -160,7 +160,7 @@ export default function BoutSummaryTable({ boutSummary, selectedBoutId, onSelect
           <Button onClick={handleClearConfirm} color="error">Clear All</Button>
         </DialogActions>
       </Dialog>
-      <TableContainer component={Paper} sx={{ width: '100%', maxHeight: '80vh' }}>
+      <TableContainer component={Paper} sx={{ width: '100%' }}>
         <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
@@ -178,9 +178,9 @@ export default function BoutSummaryTable({ boutSummary, selectedBoutId, onSelect
                 onClick={() => onSelectBout(bout.bout_id)}
                 sx={{
                   cursor: 'pointer',
-                  bgcolor: selectedBoutId === bout.bout_id ? 'primary.dark' : 'inherit',
+                  bgcolor: selectedBoutId === bout.bout_id ? '#cef' : 'inherit',
                   '&:hover': {
-                    bgcolor: selectedBoutId === bout.bout_id ? 'primary.dark' : 'action.hover',
+                    bgcolor: selectedBoutId === bout.bout_id ? '#def' : 'action.hover',
                   }
                 }}
               >
