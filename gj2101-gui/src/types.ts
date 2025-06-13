@@ -5,15 +5,42 @@ export interface ManifestItem {
 
 export type ManifestData = ManifestItem[];
 
+export type Call = {
+  exp: number;
+  file_num: number;
+  event_type: "alarm" | "string"
+  channel: number;
+  start_time_file_sec: number;
+  stop_time_file_sec: number;
+  duration_sec: number;
+  start_time_real: string;
+  stop_time_real: string;
+  start_time_experiment: string;
+  stop_time_experiment: string;
+  start_time_experiment_sec: number;
+  stop_time_experiment_sec: number;
+  assigned_location: "underground" | "arena_1" | "arena_2" | string;
+  RMS_areaa_1: string;
+  RMS_arena_2: string;
+  RMS_underground: string;
+  source: "vox" | string;
+  bout_id: number;
+  position_in_bout: number;
+  caller_id: string;
+};
+
 export type Bout = {
   exp: number;
-  file_index: number;
+  file_num: number;
+  channel: number;
+  start_time_file_sec: number;
+  stop_time_file_sec: number;
+  duration_sec: number;
+  assigned_location: "underground" | "arena_1" | "arena_2" | string;
   bout_id: number;
-  bout_start_seconds: number;
-  bout_end_seconds: number;
-  n_calls: number;
-  bout_duration_seconds: number;
-};
+  caller_id: string;
+  calls: Call[];
+}
 
 export interface MediaByLocation {
   videos: ManifestData;

@@ -12,12 +12,13 @@ interface BoutSummaryTableProps {
   selectedBoutId: number | null;
   onSelectBout: (boutId: number) => void;
   baseUrl: string;
+  csvUrl: string;
   fileIndex: number;
   manifest: ManifestData;
 }
 
-export default function BoutSummaryTable({ boutSummary, selectedBoutId, onSelectBout, baseUrl, fileIndex }: BoutSummaryTableProps) {
-  const { addTag, removeTag, getTagsForBout, tags, setTags, clearAllTags } = useBoutAnnotations(baseUrl);
+export default function BoutSummaryTable({ boutSummary, selectedBoutId, onSelectBout, baseUrl, csvUrl, fileIndex }: BoutSummaryTableProps) {
+  const { addTag, removeTag, getTagsForBout, tags, setTags, clearAllTags } = useBoutAnnotations(baseUrl, csvUrl);
   const [clearDialogOpen, setClearDialogOpen] = useState<boolean>(false);
 
   const handleClearConfirm = () => {
@@ -31,12 +32,13 @@ export default function BoutSummaryTable({ boutSummary, selectedBoutId, onSelect
     // Create CSV header
     const headers = [
       'exp',
-      'file_index',
+      'file_num',
+      'channel',
+      'start_time_file_sec',
+      'stop_time_file_sec',
+      'duration_sec',
+      'assigned_location',
       'bout_id',
-      'bout_start_seconds',
-      'bout_end_seconds',
-      'n_calls',
-      'bout_duration_seconds',
       'tags'
     ].join(',');
 
@@ -44,12 +46,13 @@ export default function BoutSummaryTable({ boutSummary, selectedBoutId, onSelect
     const rows = boutSummary.map((bout: Bout) => {
       return [
         bout.exp,
-        bout.file_index,
+        bout.file_num,
+        bout.channel,
+        bout.start_time_file_sec.toFixed(1),
+        bout.stop_time_file_sec.toFixed(1),
+        bout.duration_sec.toFixed(1),
+        bout.assigned_location,
         bout.bout_id,
-        bout.bout_start_seconds,
-        bout.bout_end_seconds,
-        bout.n_calls,
-        bout.bout_duration_seconds.toFixed(1),
         tags.filter((tag: BoutTag) => tag.bout === bout.bout_id).map((tag: BoutTag) => tag.name).join(';')
       ].join(',');
     });
@@ -165,14 +168,15 @@ export default function BoutSummaryTable({ boutSummary, selectedBoutId, onSelect
           <TableHead>
             <TableRow>
               <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}>Bout ID</TableCell>
+              <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}>File</TableCell>
               <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}>Start (s)</TableCell>
               <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}>End (s)</TableCell>
-              <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}># Calls</TableCell>
+              <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}># calls</TableCell>
               <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}>Tags</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {boutSummary.filter(b => b.file_index === fileIndex).map((bout, index) => (
+            {boutSummary.filter(b => b.file_num === fileIndex).map((bout, index) => (
               <TableRow
                 key={index}
                 onClick={() => onSelectBout(bout.bout_id)}
@@ -185,9 +189,14 @@ export default function BoutSummaryTable({ boutSummary, selectedBoutId, onSelect
                 }}
               >
                 <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}>{bout.bout_id}</TableCell>
-                <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}>{bout.bout_start_seconds.toFixed(1)}</TableCell>
-                <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}>{bout.bout_end_seconds.toFixed(1)}</TableCell>
-                <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}>{bout.n_calls}</TableCell>
+                <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}>
+                  {bout.file_num}
+                </TableCell>
+                <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}>{bout.start_time_file_sec.toFixed(1)}</TableCell>
+                <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}>{bout.stop_time_file_sec.toFixed(1)}</TableCell>
+                <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}>
+                  {bout.calls.length}
+                </TableCell>
                 <TableCell sx={{ padding: '2px 4px' }}>
                   <BoutTags
                     tags={getTagsForBout(bout.bout_id)}

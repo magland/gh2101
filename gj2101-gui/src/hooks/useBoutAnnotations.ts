@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { BoutTag } from '../types';
 
-export const useBoutAnnotations = (baseUrl: string) => {
+export const useBoutAnnotations = (baseUrl: string, csvUrl: string) => {
     const [tags, setTags] = useState<BoutTag[]>([]);
 
-    const getStorageKey = useMemo(() => (() => `bout_annotations_${baseUrl}`), [baseUrl]);
+    const getStorageKey = useMemo(() => (() => `bout_annotations_${baseUrl}_${csvUrl}`), [baseUrl, csvUrl]);
 
     useEffect(() => {
         const storageKey = getStorageKey();
@@ -15,7 +15,7 @@ export const useBoutAnnotations = (baseUrl: string) => {
         } else {
             setTags([]);
         }
-    }, [baseUrl, getStorageKey]);
+    }, [getStorageKey]);
 
     const saveTags = (newTags: BoutTag[]) => {
         const storageKey = getStorageKey();

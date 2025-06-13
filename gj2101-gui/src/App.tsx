@@ -4,7 +4,11 @@ import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import {
   Box,
   IconButton,
-  Typography
+  Typography,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel
 } from "@mui/material";
 import queryString from "query-string";
 import { useEffect, useState, useCallback } from "react";
@@ -27,13 +31,13 @@ import { ManifestData, ManifestItem } from "./types";
 function App() {
   const [manifest, setManifest] = useState<ManifestData>([]);
   const [baseUrl, setBaseUrl] = useState<string>("");
+  const [csvUrl, setCsvUrl] = useState<string>("");
+  const [csvText, setCsvText] = useState<string>("");
   const [mutedAudios, setMutedAudios] = useState<Record<string, boolean>>({});
   const [showSpectrograms, setShowSpectrograms] = useState<
     Record<string, boolean>
   >({});
   const query = queryString.parse(window.location.search);
-  const url = query.baseUrl as string;
-  const fileIndex = parseInt((query.fileIndex as string) || "");
   const { totalDuration, registerDuration } = useMediaDuration();
 
   const { currentTime, isPlaying, handlePlayPause, handleReset, setTime } =
@@ -58,6 +62,7 @@ function App() {
   };
 
   useEffect(() => {
+    const url = query.baseUrl as string;
     if (url) {
       setBaseUrl(url);
       fetch(`${url}/manifest.json`)
@@ -65,15 +70,40 @@ function App() {
         .then((data: ManifestData) => setManifest(data))
         .catch((error) => console.error("Error loading manifest:", error));
     }
-  }, [url]);
+  }, [query.baseUrl]);
+
+  useEffect(() => {
+    const url = query.csvUrl as string;
+    if (url) {
+      setCsvUrl(url);
+      fetch(url)
+        .then((response) => response.text())
+        .then((data) => {
+          setCsvText(data);
+        })
+        .catch((error) => console.error("Error loading CSV:", error));
+    }
+  }
+  , [query.csvUrl]);
+
+  const [fileIndex, setFileIndex] = useState<number>(
+    () => {
+      const stored = localStorage.getItem('timekeeper-file-index');
+      return stored ? parseInt(stored, 10) : 58;
+    }
+  );
 
   const { boutSummary, selectedBoutId, handleBoutSelect } = useBoutSummary({
-    url,
+    csvText,
     fileIndex,
-    manifest,
     currentTime,
     setTime,
   });
+
+  // Get unique file numbers from bout summary
+  const uniqueFileNums = boutSummary
+    ? Array.from(new Set(boutSummary.map(bout => bout.file_num))).sort((a, b) => a - b)
+    : [];
 
   const { mediaByLocation, locations, sortVideos } = useMediaOrganization({
     manifest,
@@ -91,57 +121,77 @@ function App() {
   const width = W - 40;
   const height = H - 40;
 
-  const topHeight = 120;
+  const topHeight = 80;
   const leftPanelWidth = Math.max(250, Math.min(800, width * 0.25));
-  const barWidth = width - 50;
 
   return (
     <div style={{ position: "absolute", width, height, left: 20, top: 20 }}>
       <VBoxLayout heights={[topHeight, height - topHeight]} width={width}>
         <div>
-          <Box>
-            <IconButton onClick={handlePlayPause} size="small" color="primary">
-              {isPlaying ? <PauseIcon /> : <PlayArrowIcon />}
-            </IconButton>
-            <IconButton onClick={handleReset} size="small">
-              <RestartAltIcon />
-            </IconButton>
-            <Typography variant="h6">
-              {currentTime.toFixed(1)}s / {totalDuration.toFixed(1)}s
-            </Typography>
-          </Box>
-          <Box
-            sx={{
-              width: barWidth,
-              height: 20,
-              bgcolor: "rgba(19, 17, 17, 0.1)",
-              borderRadius: 1,
-              position: "relative",
-              cursor: "pointer",
-              mb: 2,
-            }}
-            onClick={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect();
-              const x = e.clientX - rect.left;
-              const percentage = x / rect.width;
-              const newTime = Math.max(
-                0,
-                Math.min(totalDuration, Math.floor(percentage * totalDuration))
-              );
-              setTime(newTime);
-            }}
-          >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2, p: 1, pt: 2 }}>
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel id="file-select-label">File Number</InputLabel>
+              <Select
+                labelId="file-select-label"
+                value={fileIndex}
+                label="File Number"
+                onChange={(e) => {
+                const newIndex = Number(e.target.value);
+                setFileIndex(newIndex);
+                localStorage.setItem('timekeeper-file-index', String(newIndex));
+              }}
+              >
+                {uniqueFileNums.map((num) => (
+                  <MenuItem key={num} value={num}>
+                    File {num}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <Box>
+              <IconButton onClick={handlePlayPause} size="small" color="primary">
+                {isPlaying ? <PauseIcon /> : <PlayArrowIcon />}
+              </IconButton>
+              <IconButton onClick={handleReset} size="small">
+                <RestartAltIcon />
+              </IconButton>
+            </Box>
             <Box
               sx={{
-                position: "absolute",
-                left: 0,
-                top: 0,
-                height: "100%",
-                width: (currentTime / totalDuration) * barWidth,
-                bgcolor: "primary.main",
+                flexGrow: 1,
+                height: 20,
+                bgcolor: "rgba(19, 17, 17, 0.1)",
                 borderRadius: 1,
+                position: "relative",
+                cursor: "pointer",
               }}
-            />
+              onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const percentage = x / rect.width;
+                const newTime = Math.max(
+                  0,
+                  Math.min(totalDuration, Math.floor(percentage * totalDuration))
+                );
+                setTime(newTime);
+              }}
+            >
+              <Box
+                sx={{
+                  position: "absolute",
+                  left: 0,
+                  top: 0,
+                  height: "100%",
+                  width: (currentTime / totalDuration) * 100 + "%",
+                  bgcolor: "primary.main",
+                  borderRadius: 1,
+                }}
+              />
+            </Box>
+            <Typography variant="h6" component="span" sx={{ minWidth: '120px' }}>
+              {currentTime.toFixed(1)}s / {totalDuration.toFixed(1)}s
+            </Typography>
+
           </Box>
         </div>
         <HBoxLayout
@@ -154,6 +204,7 @@ function App() {
             onSelectBout={handleBoutSelect}
             manifest={manifest}
             baseUrl={baseUrl}
+            csvUrl={csvUrl}
             fileIndex={fileIndex}
           />
           <div
@@ -173,14 +224,14 @@ function App() {
             {locations
               .filter((location) => activeLocations[location])
               .map((location) => (
-                <div>
+                <div key={location}>
                   <Box
                     sx={{
                       display: "flex",
                       gap: 2,
                       overflowX: "auto",
                       mb: 2,
-                      pb: 1 /* Space for scrollbar */,
+                      pb: 1,
                     }}
                   >
                     {sortVideos(mediaByLocation[location].videos).map(
@@ -192,19 +243,18 @@ function App() {
                           }}
                           key={video.path}
                         >
-                              <VideoPlayer
-                                url={`${baseUrl}/${video.path}`}
-                                title=""
-                                // title={video.path.split('/').pop() || ''}
-                                currentTime={currentTime}
-                                isPlaying={isPlaying}
-                                shouldFlip={
-                                  video.path === "video_burrow_side_50.mp4"
-                                }
-                                onLoadedMetadata={(duration) =>
-                                  handleMediaDuration(duration)
-                                }
-                              />
+                          <VideoPlayer
+                            url={`${baseUrl}/${video.path}`}
+                            title=""
+                            currentTime={currentTime}
+                            isPlaying={isPlaying}
+                            shouldFlip={
+                              video.path === "video_burrow_side_50.mp4"
+                            }
+                            onLoadedMetadata={(duration) =>
+                              handleMediaDuration(duration)
+                            }
+                          />
                         </Box>
                       )
                     )}
@@ -212,20 +262,20 @@ function App() {
                   <div>
                     {mediaByLocation[location].audios.map(
                       (audio: ManifestItem) => (
-                        <>
+                        <div key={audio.path}>
                           <div>
-                              <AudioPlayer
-                                url={`${baseUrl}/${audio.path}`}
-                                title={audio.path.split("/").pop() || ""}
-                                currentTime={currentTime}
-                                totalDuration={totalDuration}
-                                isPlaying={isPlaying}
-                                isMuted={mutedAudios[audio.path] || false}
-                                onToggleMute={() => handleToggleMute(audio.path)}
-                                onLoadedMetadata={(duration) =>
-                                  handleMediaDuration(duration)
-                                }
-                              />
+                            <AudioPlayer
+                              url={`${baseUrl}/${audio.path}`}
+                              title={audio.path.split("/").pop() || ""}
+                              currentTime={currentTime}
+                              totalDuration={totalDuration}
+                              isPlaying={isPlaying}
+                              isMuted={mutedAudios[audio.path] || false}
+                              onToggleMute={() => handleToggleMute(audio.path)}
+                              onLoadedMetadata={(duration) =>
+                                handleMediaDuration(duration)
+                              }
+                            />
                             <SpectrogramToggle
                               isVisible={showSpectrograms[audio.path] || false}
                               onToggle={() =>
@@ -243,7 +293,7 @@ function App() {
                               />
                             </div>
                           )}
-                        </>
+                        </div>
                       )
                     )}
                   </div>

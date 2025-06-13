@@ -1,16 +1,14 @@
-import { useState, useEffect } from 'react';
-import { Bout, ManifestData, ManifestItem } from '../types';
+import { useEffect, useState } from 'react';
+import { Bout, Call } from '../types';
 
 interface UseBoutSummaryProps {
-  url: string;
+  csvText: string;
   fileIndex: number;
-  manifest: ManifestData;
   currentTime: number;
   setTime: (time: number) => void;
 }
 
-export const useBoutSummary = ({ url, fileIndex, manifest, currentTime, setTime }: UseBoutSummaryProps) => {
-  const [boutSummaryUrl, setBoutSummaryUrl] = useState<string>('');
+export const useBoutSummary = ({ csvText, fileIndex, currentTime, setTime }: UseBoutSummaryProps) => {
   const [boutSummary, setBoutSummary] = useState<Bout[] | null>(null);
   const [selectedBoutId, setSelectedBoutId] = useState<number | null>(null);
 
@@ -18,56 +16,76 @@ export const useBoutSummary = ({ url, fileIndex, manifest, currentTime, setTime 
     if (boutSummary) {
       const selectedBout = boutSummary.find(bout => bout.bout_id === boutId);
       if (selectedBout) {
-        setTime(selectedBout.bout_start_seconds);
+        setTime(selectedBout.start_time_file_sec);
       }
     }
   };
 
-  // Set bout summary URL based on manifest
-  useEffect(() => {
-    setBoutSummaryUrl("");
-    if (!url) return;
-    if (!manifest || manifest.length === 0) return;
-    const boutSummaryFile = manifest.find((item: ManifestItem) => item.path.split('/').pop() === 'bout_summary.csv');
-    setBoutSummaryUrl(boutSummaryFile ? `${url}/${boutSummaryFile.path}` : '');
-  }, [manifest, url]);
-
   // Load and parse bout summary data
   useEffect(() => {
     setBoutSummary(null);
-    if (!boutSummaryUrl) return;
-    fetch(boutSummaryUrl)
-      .then(response => response.text())
-      .then(text => {
-        const lines = text.split('\n');
-        const headerLine = lines[0];
-        const columnNames = headerLine.split(',').map(name => name.trim());
-        const data = lines.slice(1).map(line => {
-          const values = line.split(',').map(value => value.trim());
-          const boutData: {[key: string]: number | string} = {};
-          columnNames.forEach((name, index) => {
-            if (name === 'bout_start_seconds' || name === 'bout_end_seconds' || name === 'bout_duration_seconds') {
-              boutData[name] = parseFloat(values[index]);
-            } else if (name === 'exp' || name === 'file_index' || name === 'bout_id' || name === 'n_calls') {
-              boutData[name] = parseInt(values[index], 10);
-            } else {
-              console.warn(`Unknown column name: ${name}`);
-            }
-          });
-          return boutData;
-        });
-        setBoutSummary(data as Bout[]);
-      })
-      .catch(error => console.error('Error loading bout summary:', error));
-  }, [boutSummaryUrl]);
+    if (!csvText) return;
+    const lines = csvText.split('\n');
+    const headerLine = lines[0];
+    const columnNames = headerLine.split(',').map(name => name.trim());
+    const allCalls = lines.slice(1).map(line => {
+      const values = line.split(',').map(value => value.trim());
+      const valuesByColumn: Record<string, string> = {};
+      columnNames.forEach((name, index) => {
+        valuesByColumn[name] = values[index] || '';
+      });
+      const callData: Call = {
+        exp: parseInt(valuesByColumn['exp'], 10),
+        file_num: parseInt(valuesByColumn['file_num'], 10),
+        event_type: valuesByColumn['event_type'] as "alarm" | "string",
+        channel: parseInt(valuesByColumn['channel'], 10),
+        start_time_file_sec: parseFloat(valuesByColumn['start_time_file_sec']),
+        stop_time_file_sec: parseFloat(valuesByColumn['stop_time_file_sec']),
+        duration_sec: parseFloat(valuesByColumn['duration_sec']),
+        start_time_real: valuesByColumn['start_time_real'],
+        stop_time_real: valuesByColumn['stop_time_real'],
+        start_time_experiment: valuesByColumn['start_time_experiment'],
+        stop_time_experiment: valuesByColumn['stop_time_experiment'],
+        start_time_experiment_sec: parseFloat(valuesByColumn['start_time_experiment_sec']),
+        stop_time_experiment_sec: parseFloat(valuesByColumn['stop_time_experiment_sec']),
+        assigned_location: valuesByColumn['assigned_location'] as "underground" | "arena_1" | "arena_2" | string,
+        RMS_areaa_1: valuesByColumn['RMS_areaa_1'],
+        RMS_arena_2: valuesByColumn['RMS_arena_2'],
+        RMS_underground: valuesByColumn['RMS_underground'],
+        source: valuesByColumn['source'] as "vox" | string,
+        bout_id: parseInt(valuesByColumn['bout_id'], 10),
+        position_in_bout: parseInt(valuesByColumn['position_in_bout'], 10),
+        caller_id: valuesByColumn['caller_id'] || ''
+      }
+      return callData;
+    });
+    const allBoutIds = Array.from(new Set(allCalls.map(call => call.bout_id))).filter(b => !isNaN(b));
+    const allBouts: Bout[] = allBoutIds.map(boutId => {
+      const callsForBout = allCalls.filter(call => call.bout_id === boutId);
+      const firstCall = callsForBout[0];
+      return {
+        exp: firstCall.exp,
+        file_num: firstCall.file_num,
+        channel: firstCall.channel,
+        start_time_file_sec: Math.min(...callsForBout.map(call => call.start_time_file_sec)),
+        stop_time_file_sec: Math.max(...callsForBout.map(call => call.stop_time_file_sec)),
+        duration_sec: Math.max(...callsForBout.map(call => call.stop_time_file_sec)) - Math.min(...callsForBout.map(call => call.start_time_file_sec)),
+        assigned_location: firstCall.assigned_location,
+        bout_id: boutId,
+        caller_id: "",
+        calls: callsForBout
+      };
+    });
+    setBoutSummary(allBouts);
+  }, [csvText]);
 
   // Update selected bout based on current time
   useEffect(() => {
     if (!boutSummary) return;
 
-    const currentBout = boutSummary.filter(b => b.file_index === fileIndex).find(bout =>
-      currentTime >= bout.bout_start_seconds &&
-      currentTime <= bout.bout_end_seconds
+    const currentBout = boutSummary.filter(b => b.file_num === fileIndex).find(bout =>
+      currentTime >= bout.start_time_file_sec &&
+      currentTime <= bout.stop_time_file_sec
     );
 
     setSelectedBoutId(currentBout ? currentBout.bout_id : null);
