@@ -40,6 +40,7 @@ export default function BoutSummaryTable({ boutSummary, selectedBoutId, onSelect
       'duration_sec',
       'assigned_location',
       'bout_id',
+      'num_calls',
       'tags',
       'note'
     ].join(',');
@@ -56,6 +57,7 @@ export default function BoutSummaryTable({ boutSummary, selectedBoutId, onSelect
         bout.duration_sec.toFixed(1),
         bout.assigned_location,
         bout.bout_id,
+        bout.calls.length,
         tags.filter((tag: BoutTag) => tag.bout === bout.bout_id).map((tag: BoutTag) => tag.name).join(';'),
         `"${boutNote.replace(/"/g, '""')}"`
       ].join(',');

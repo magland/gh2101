@@ -36,7 +36,7 @@ export const useBoutSummary = ({ csvText, fileIndex, currentTime, setTime }: Use
       });
       const callData: Call = {
         exp: parseInt(valuesByColumn['exp'], 10),
-        file_num: parseInt(valuesByColumn['file_num'], 10),
+        file_num: parseInt(valuesByColumn['file_num'] || valuesByColumn["file_index"], 10),
         event_type: valuesByColumn['event_type'] as "alarm" | "string",
         channel: parseInt(valuesByColumn['channel'], 10),
         start_time_file_sec: parseFloat(valuesByColumn['start_time_file_sec']),
