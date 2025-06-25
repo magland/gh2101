@@ -26,6 +26,8 @@ def main():
             upload_key = f'from_gily/237/{file_rel_path}'
             full_path = os.path.join(root, fname)
 
+
+
             processed_files += 1
             fsize = os.path.getsize(full_path)
             size_mb = fsize / (1024 * 1024)

@@ -56,6 +56,11 @@ export interface BoutTag {
   name: string;
 }
 
+export interface BoutNote {
+  bout: number;
+  note: string;
+}
+
 export interface LocationStorageData {
   activeLocations: ActiveLocationsMap;
   baseUrl: string;

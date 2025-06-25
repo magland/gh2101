@@ -3,9 +3,10 @@ import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper
 import DownloadIcon from '@mui/icons-material/Download';
 import UploadIcon from '@mui/icons-material/Upload';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { Bout, BoutTag, ManifestData } from '../types';
+import { Bout, BoutTag, BoutNote as BoutNoteType, ManifestData } from '../types';
 import { useBoutAnnotations } from '../hooks/useBoutAnnotations';
 import BoutTags from './BoutTags';
+import BoutNote from './BoutNote';
 
 interface BoutSummaryTableProps {
   boutSummary: Bout[] | null;
@@ -18,7 +19,7 @@ interface BoutSummaryTableProps {
 }
 
 export default function BoutSummaryTable({ boutSummary, selectedBoutId, onSelectBout, baseUrl, csvUrl, fileIndex }: BoutSummaryTableProps) {
-  const { addTag, removeTag, getTagsForBout, tags, setTags, clearAllTags } = useBoutAnnotations(baseUrl, csvUrl);
+  const { addTag, removeTag, getTagsForBout, tags, setTags, clearAllTags, setNote, getNoteForBout, setNotes, getAllUniqueTagNames } = useBoutAnnotations(baseUrl, csvUrl);
   const [clearDialogOpen, setClearDialogOpen] = useState<boolean>(false);
 
   const handleClearConfirm = () => {
@@ -39,11 +40,13 @@ export default function BoutSummaryTable({ boutSummary, selectedBoutId, onSelect
       'duration_sec',
       'assigned_location',
       'bout_id',
-      'tags'
+      'tags',
+      'note'
     ].join(',');
 
     // Create CSV rows from all bouts
     const rows = boutSummary.map((bout: Bout) => {
+      const boutNote = getNoteForBout(bout.bout_id) || '';
       return [
         bout.exp,
         bout.file_num,
@@ -53,7 +56,8 @@ export default function BoutSummaryTable({ boutSummary, selectedBoutId, onSelect
         bout.duration_sec.toFixed(1),
         bout.assigned_location,
         bout.bout_id,
-        tags.filter((tag: BoutTag) => tag.bout === bout.bout_id).map((tag: BoutTag) => tag.name).join(';')
+        tags.filter((tag: BoutTag) => tag.bout === bout.bout_id).map((tag: BoutTag) => tag.name).join(';'),
+        `"${boutNote.replace(/"/g, '""')}"`
       ].join(',');
     });
 
@@ -101,6 +105,7 @@ export default function BoutSummaryTable({ boutSummary, selectedBoutId, onSelect
                   const headers = lines[0].split(',');
                   const tagsIndex = headers.findIndex(h => h.trim() === 'tags');
                   const boutIdIndex = headers.findIndex(h => h.trim() === 'bout_id');
+                  const noteIndex = headers.findIndex(h => h.trim() === 'note');
 
                   if (tagsIndex === -1 || boutIdIndex === -1) {
                     alert('Invalid CSV format. Must contain bout_id and tags columns.');
@@ -108,14 +113,39 @@ export default function BoutSummaryTable({ boutSummary, selectedBoutId, onSelect
                   }
 
                   const newTags: BoutTag[] = [];
+                  const newNotes: BoutNoteType[] = [];
+
                   for (let i = 1; i < lines.length; i++) {
                     const line = lines[i].trim();
                     if (!line) continue;
 
-                    const values = line.split(',');
+                    // Simple CSV parsing - split by comma but handle quoted fields
+                    const values: string[] = [];
+                    let current = '';
+                    let inQuotes = false;
+
+                    for (let j = 0; j < line.length; j++) {
+                      const char = line[j];
+                      if (char === '"') {
+                        if (inQuotes && line[j + 1] === '"') {
+                          current += '"';
+                          j++; // Skip next quote
+                        } else {
+                          inQuotes = !inQuotes;
+                        }
+                      } else if (char === ',' && !inQuotes) {
+                        values.push(current);
+                        current = '';
+                      } else {
+                        current += char;
+                      }
+                    }
+                    values.push(current); // Add the last value
+
                     const boutId = parseInt(values[boutIdIndex]);
                     const tagString = values[tagsIndex];
 
+                    // Handle tags
                     if (tagString) {
                       const tags = tagString.split(';');
                       tags.forEach(tag => {
@@ -127,11 +157,27 @@ export default function BoutSummaryTable({ boutSummary, selectedBoutId, onSelect
                         }
                       });
                     }
+
+                    // Handle notes (if note column exists)
+                    if (noteIndex !== -1 && values[noteIndex]) {
+                      const noteText = values[noteIndex].trim();
+                      if (noteText) {
+                        newNotes.push({
+                          bout: boutId,
+                          note: noteText
+                        });
+                      }
+                    }
                   }
 
-                  const storageKey = `bout_annotations_${baseUrl}`;
-                  localStorage.setItem(storageKey, JSON.stringify({ tags: newTags }));
+                  const storageKey = `bout_annotations_${baseUrl}_${csvUrl}`;
+                  const data: { tags: BoutTag[]; notes?: BoutNoteType[] } = { tags: newTags };
+                  if (newNotes.length > 0) {
+                    data.notes = newNotes;
+                  }
+                  localStorage.setItem(storageKey, JSON.stringify(data));
                   setTags(newTags);
+                  setNotes(newNotes);
                 };
 
                 reader.readAsText(file);
@@ -173,6 +219,7 @@ export default function BoutSummaryTable({ boutSummary, selectedBoutId, onSelect
               <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}>End (s)</TableCell>
               <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}># calls</TableCell>
               <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}>Tags</TableCell>
+              <TableCell sx={{ fontSize: '0.75rem', padding: '2px 4px' }}>N</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -200,8 +247,15 @@ export default function BoutSummaryTable({ boutSummary, selectedBoutId, onSelect
                 <TableCell sx={{ padding: '2px 4px' }}>
                   <BoutTags
                     tags={getTagsForBout(bout.bout_id)}
+                    availableTags={getAllUniqueTagNames()}
                     onAddTag={(tag) => addTag(bout.bout_id, tag)}
                     onRemoveTag={(tag) => removeTag(bout.bout_id, tag)}
+                  />
+                </TableCell>
+                <TableCell sx={{ padding: '2px 4px' }}>
+                  <BoutNote
+                    note={getNoteForBout(bout.bout_id)}
+                    onSetNote={(note) => setNote(bout.bout_id, note)}
                   />
                 </TableCell>
               </TableRow>
