@@ -104,7 +104,8 @@ def spec_to_png_bytes(spec):
     scal = 255.0 / (smax - smin) if smax > smin else 1.0
     arr8 = ((spec - smin) * scal).clip(0, 255).astype(np.uint8)
 
-    img = Image.fromarray(arr8, mode="L").transpose(Image.FLIP_TOP_BOTTOM)
+    # img = Image.fromarray(arr8, mode="L").transpose(Image.FLIP_TOP_BOTTOM)
+    img = Image.fromarray(arr8, mode="L")
     img.putpalette(_VIRIDIS)
     out = io.BytesIO()
     img.save(out, format="PNG", optimize=True)
