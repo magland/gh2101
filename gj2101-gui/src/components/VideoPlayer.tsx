@@ -6,7 +6,8 @@ interface VideoPlayerProps {
   title: string;
   currentTime: number;
   isPlaying: boolean;
-  shouldFlip?: boolean;
+  shouldFlipX?: boolean;
+  shouldFlipY?: boolean;
   onLoadedMetadata?: (duration: number) => void;
 }
 
@@ -15,7 +16,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   title,
   currentTime,
   isPlaying,
-  shouldFlip,
+  shouldFlipX,
+  shouldFlipY,
   onLoadedMetadata
 }) => {
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
@@ -81,7 +83,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   width: "100%",
                   maxWidth: 600,
                   height: "auto",
-                  transform: shouldFlip ? "scaleX(-1) scaleY(-1)" : "none"
+                  transform: `${shouldFlipX ? "scaleX(-1)" : ""} ${shouldFlipY ? "scaleY(-1)" : ""}`.trim() || "none"
                 }}
                 onSeeking={() => {
                   setIsSeeking(true);

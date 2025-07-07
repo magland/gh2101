@@ -248,8 +248,11 @@ function App() {
                             title=""
                             currentTime={currentTime}
                             isPlaying={isPlaying}
-                            shouldFlip={
-                              video.path === "video_burrow_side_50.mp4"
+                            shouldFlipX={
+                              video.path.includes("video_burrow_side") // issue with Gily's data
+                            }
+                            shouldFlipY={
+                              video.path.includes("video_burrow_side") // issue with Gily's data
                             }
                             onLoadedMetadata={(duration) =>
                               handleMediaDuration(duration)
